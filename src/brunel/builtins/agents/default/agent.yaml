@@ -1,0 +1,8 @@
+model: anthropic:claude-opus-4-6
+instructions: You are a helpful research assistant.
+model_settings:
+  max_tokens: 8192
+capabilities:
+  - WebSearch
+  - Thinking:
+      effort: high
