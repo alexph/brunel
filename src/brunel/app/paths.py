@@ -1,6 +1,6 @@
 import pathlib
 
-from brunel.core import platform
+from platformdirs import user_cache_path, user_config_path, user_data_path
 
 JUNK_DIRS = [
     "__pycache__",
@@ -10,6 +10,31 @@ JUNK_DIRS = [
     "dist",
     "build",
 ]
+
+
+def get_cache_path() -> pathlib.Path:
+    """Return the path to the user's cache directory."""
+    return user_cache_path("brunel", "brunel")
+
+
+def get_data_path() -> pathlib.Path:
+    """Return the path to the user's data directory."""
+    return user_data_path("brunel", "brunel")
+
+
+def get_config_path() -> pathlib.Path:
+    """Return the path to the user's config directory."""
+    return user_config_path("brunel", "brunel")
+
+
+def get_home_path() -> pathlib.Path:
+    """Return the path to the user's home directory."""
+    return pathlib.Path.home()
+
+
+def get_install_path() -> pathlib.Path:
+    """Return the path to the installation directory."""
+    return pathlib.Path(__file__).parent.parent
 
 
 def get_agent_candidate_paths(
@@ -26,14 +51,14 @@ def get_agent_candidate_paths(
 
     # Lowest index is the highest priority.
     agent_seed_paths = [
-        platform.get_home_path() / ".brunel" / "agents",
-        platform.get_config_path() / "agents",
+        get_home_path() / ".brunel" / "agents",
+        get_config_path() / "agents",
     ]
 
     if cwd_path is not None:
         agent_seed_paths.insert(0, cwd_path / ".brunel" / "agents")
 
-    agent_seed_paths.insert(0, platform.get_install_path() / "builtins" / "agents")
+    agent_seed_paths.insert(0, get_install_path() / "builtins" / "agents")
 
     return agent_seed_paths
 
@@ -52,14 +77,14 @@ def get_skills_candidate_paths(
 
     # Lowest index is the highest priority.
     skill_seed_paths = [
-        platform.get_home_path() / ".brunel" / "skills",
-        platform.get_config_path() / "skills",
+        get_home_path() / ".brunel" / "skills",
+        get_config_path() / "skills",
     ]
 
     if cwd_path is not None:
         skill_seed_paths.insert(0, cwd_path / ".brunel" / "skills")
 
-    skill_seed_paths.insert(0, platform.get_install_path() / "builtins" / "skills")
+    skill_seed_paths.insert(0, get_install_path() / "builtins" / "skills")
 
     return skill_seed_paths
 
@@ -76,8 +101,8 @@ def get_mcp_candidate_paths(cwd_path: pathlib.Path | None = None) -> list[pathli
 
     # Lowest index is the highest priority.
     mcp_seed_paths = [
-        platform.get_home_path() / ".brunel",
-        platform.get_config_path(),
+        get_home_path() / ".brunel",
+        get_config_path(),
     ]
     if cwd_path is not None:
         mcp_seed_paths.insert(0, cwd_path / ".brunel")

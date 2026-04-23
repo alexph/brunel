@@ -8,6 +8,7 @@ dependencies = [
     "platformdirs>=4.9.6",
     "prompt-toolkit>=3.0.52",
     "pydantic-ai-slim[openai]>=1.78.0",
+    "pydantic-settings>=2.14.0",
     "pytest>=9.0.3",
     "typer>=0.24.1",
 ]

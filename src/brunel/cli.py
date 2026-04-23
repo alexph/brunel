@@ -3,7 +3,7 @@ import pathlib
 
 import typer
 
-from brunel.core.discovery import build_world
+from brunel.app.discovery import build_world
 
 # from brunel.tui.app import tui_app
 

@@ -1,8 +1,8 @@
 import pathlib
 from collections.abc import Generator
 
-from brunel.core import dirs
-from brunel.core.registries import (
+from brunel.app import dirs
+from brunel.app.registries import (
     AgentPath,
     AgentPathRegistry,
     MCPPath,
