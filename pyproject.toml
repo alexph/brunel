@@ -5,12 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "openai-codex>=0.144.4",
     "platformdirs>=4.9.6",
     "prompt-toolkit>=3.0.52",
     "pydantic-ai-slim[openai]>=1.78.0",
     "pydantic-settings>=2.14.0",
     "pytest>=9.0.3",
+    "sqlmodel>=0.0.39",
     "typer>=0.24.1",
+    "uvicorn>=0.52.3",
 ]
 
 [project.scripts]

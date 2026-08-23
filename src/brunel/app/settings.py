@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import ClassVar, override
 
 from pydantic_settings import (
     BaseSettings,
@@ -9,7 +10,7 @@ from pydantic_settings import (
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
+    model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",
         env_prefix="brunel_",
     )
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
 def load_settings(config_path: Path) -> Settings:
     class Settings_(Settings):
         @classmethod
+        @override
         def settings_customise_sources(
             cls,
             settings_cls: type[BaseSettings],
