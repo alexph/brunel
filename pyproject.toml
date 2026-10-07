@@ -12,7 +12,8 @@ dependencies = [
     "pydantic-ai-slim[openai]>=1.78.0",
     "pydantic-settings>=2.14.0",
     "pytest>=9.0.3",
-    "sqlmodel>=0.0.39",
+    "alembic>=1.18.3",
+    "sqlalchemy>=2.0.52",
     "typer>=0.24.1",
     "uvicorn>=0.52.3",
 ]
