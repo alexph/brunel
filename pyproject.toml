@@ -16,10 +16,14 @@ dependencies = [
     "sqlalchemy>=2.0.52",
     "typer>=0.24.1",
     "uvicorn>=0.52.3",
+    "textual>=8.2.8",
+    "httpx>=0.28.1",
+    "websockets>=17.0.1",
+    "anyio>=4.13.0",
 ]
 
 [project.scripts]
-brunel = "brunel.cli:app"
+brunel = "brunel.cli:entrypoint"
 
 [build-system]
 requires = ["hatchling"]

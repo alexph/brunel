@@ -6,7 +6,6 @@ from sqlalchemy import URL
 
 from brunel.app.locations import get_locations
 
-
 DATABASE_FILENAME = "brunel.sqlite3"
 
 
@@ -25,3 +24,8 @@ def upgrade_database(database_url: str | None = None) -> None:
     )
     config.set_main_option("sqlalchemy.url", database_url or get_database_url())
     command.upgrade(config, "head")
+
+
+def bootstrap(database_url: str | None = None) -> None:
+    """Prepare Brunel's persistent state before the application starts."""
+    upgrade_database(database_url)

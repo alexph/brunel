@@ -3,8 +3,12 @@ from types import SimpleNamespace
 
 from sqlalchemy import create_engine, inspect, text
 
-from brunel.app.bootstrap import bootstrap
-from brunel.app.db import DATABASE_FILENAME, get_database_url, upgrade_database
+from brunel.app.db import (
+    DATABASE_FILENAME,
+    bootstrap,
+    get_database_url,
+    upgrade_database,
+)
 
 
 def test_get_database_url_uses_user_data_directory(monkeypatch, tmp_path: Path) -> None:
@@ -26,14 +30,22 @@ def test_bootstrap_upgrades_explicit_database(tmp_path: Path) -> None:
     engine = create_engine(database_url)
     inspector = inspect(engine)
     assert inspector.get_table_names() == ["alembic_version", "projects"]
-    project_columns = {column["name"]: column for column in inspector.get_columns("projects")}
+    project_columns = {
+        column["name"]: column for column in inspector.get_columns("projects")
+    }
     assert set(project_columns) == {"id", "name", "location"}
     assert project_columns["id"]["primary_key"] == 1
-    assert {tuple(index["column_names"]) for index in inspector.get_unique_constraints("projects")} == {
-        ("location",)
-    }
+    assert {
+        tuple(index["column_names"])
+        for index in inspector.get_unique_constraints("projects")
+    } == {("location",)}
     with engine.connect() as connection:
-        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0001_create_projects"
+        assert (
+            connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one()
+            == "0001_create_projects"
+        )
 
 
 def test_upgrade_database_is_idempotent(tmp_path: Path) -> None:
@@ -44,4 +56,9 @@ def test_upgrade_database_is_idempotent(tmp_path: Path) -> None:
 
     engine = create_engine(database_url)
     with engine.connect() as connection:
-        assert connection.execute(text("SELECT COUNT(*) FROM alembic_version")).scalar_one() == 1
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM alembic_version")
+            ).scalar_one()
+            == 1
+        )
