@@ -41,7 +41,7 @@ def test_server_command(monkeypatch):
     calls = []
     monkeypatch.setattr(cli, "server", lambda **kwargs: calls.append(kwargs))
     assert CliRunner().invoke(cli.app, ["server"]).exit_code == 0
-    assert calls == [{"service": False, "idle_timeout": 30}]
+    assert calls == [{"service": False, "idle_timeout": None, "config_file": None}]
 
 
 def test_placeholder_screens(tmp_path):

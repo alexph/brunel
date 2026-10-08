@@ -107,6 +107,15 @@ def get_locations() -> Locations:
 
 
 @dataclass(kw_only=True, frozen=True)
+class ResolvedLocations:
+    home: pathlib.Path
+    install: pathlib.Path
+    config: pathlib.Path
+    data: pathlib.Path
+    cache: pathlib.Path
+
+
+@dataclass(kw_only=True, frozen=True)
 class AgentPath:
     path: pathlib.Path
     """The path to the agent directory root."""
@@ -131,6 +140,9 @@ class MCPPath:
 
 
 class AbstractFinder(abc.ABC):
+    def __init__(self, locations: ResolvedLocations):
+        self.locations = locations
+
     @abc.abstractmethod
     def get_paths(self) -> list[pathlib.Path]:
         """Return a list of candidate paths for discovery."""
@@ -143,7 +155,7 @@ class AbstractFinder(abc.ABC):
 class AgentFinder(AbstractFinder):
     @override
     def get_paths(self) -> list[pathlib.Path]:
-        locations = get_locations()
+        locations = self.locations
         return [
             locations.home / ".brunel" / "agents",
             locations.config / "agents",
@@ -171,7 +183,7 @@ class AgentFinder(AbstractFinder):
 class SkillFinder(AbstractFinder):
     @override
     def get_paths(self) -> list[pathlib.Path]:
-        locations = get_locations()
+        locations = self.locations
         return [
             locations.home / ".brunel" / "skills",
             locations.config / "skills",
@@ -192,7 +204,7 @@ class SkillFinder(AbstractFinder):
 class MCPFinder(AbstractFinder):
     @override
     def get_paths(self) -> list[pathlib.Path]:
-        locations = get_locations()
+        locations = self.locations
         return [
             locations.home / ".brunel",
             locations.config,
@@ -204,6 +216,8 @@ class MCPFinder(AbstractFinder):
         for path in self.get_paths():
             if not path.exists():
                 continue
+            if (path / "mcp.json").is_file():
+                items.append(MCPPath(path=path, mcp_file=path / "mcp.json"))
             for item in path.iterdir():
                 if item.is_dir() and (item / "mcp.json").exists():
                     items.append(MCPPath(path=item, mcp_file=item / "mcp.json"))

@@ -35,12 +35,16 @@ def run_server(
     service: bool = typer.Option(
         False, help="Stay alive regardless of connected clients."
     ),
-    idle_timeout: float = typer.Option(
-        30, min=0.1, help="Seconds to wait before idle shutdown."
+    idle_timeout: float | None = typer.Option(
+        None, min=0.1, help="Seconds to wait before idle shutdown (default: 30)."
+    ),
+    config_file: Path | None = typer.Option(
+        None, "--config", exists=True, dir_okay=False, resolve_path=True,
+        help="User TOML configuration file.",
     ),
 ):
     """Run the Brunel server in the foreground."""
-    server(service=service, idle_timeout=idle_timeout)
+    server(service=service, idle_timeout=idle_timeout, config_file=config_file)
 
 
 def route_args(args: list[str]) -> list[str]:

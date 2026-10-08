@@ -6,11 +6,16 @@ import anyio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
+from brunel.app.db import Database
+from brunel.app.runtime import RuntimeConfig
 from brunel.daemon.state import DaemonState
 from brunel.protocol import DaemonStatus
 
 
-def create_app(state: DaemonState, shutdown: Callable[[], None]) -> FastAPI:
+def create_app(
+    state: DaemonState, shutdown: Callable[[], None], *,
+    runtime: RuntimeConfig | None = None, database: Database | None = None,
+) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         monitor = asyncio.create_task(state.monitor(shutdown))
@@ -23,6 +28,8 @@ def create_app(state: DaemonState, shutdown: Callable[[], None]) -> FastAPI:
 
     app = FastAPI(lifespan=lifespan)
     app.state.daemon = state
+    app.state.runtime = runtime
+    app.state.database = database
 
     @app.middleware("http")
     async def track_request(request, call_next):

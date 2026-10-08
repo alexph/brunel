@@ -31,3 +31,35 @@ status events with sequence numbers scoped to the daemon run. Each client has a
 64-event outgoing queue; overflow disconnects that client so it can reconnect for
 a fresh snapshot. The TUI reconnects automatically after connection loss.
 Remote connections, task persistence, and project registration remain pending.
+
+The daemon loads `brunel.toml` from Brunel's platform-specific user config
+directory. A missing default file uses defaults. Set `BRUNEL_CONFIG_FILE` or run
+`brunel server --config /path/to/brunel.toml` to select a different file; an
+explicitly selected file must exist. For a daemon started by the TUI, use
+`BRUNEL_CONFIG_FILE`.
+
+For example:
+
+```toml
+data_dir = "./data"
+cache_dir = "./cache"
+config_dir = "./discovery"
+database_path = "./data/brunel.sqlite3"
+idle_timeout = 30
+```
+
+All configured relative paths are resolved against the selected config file's
+directory, including paths supplied through environment variables. `config_dir`
+changes agent, skill, and MCP discovery; it does not cause another config file to
+be loaded. By default, the database lives in Brunel's user data directory.
+
+Explicit values (such as `--idle-timeout`) override environment variables, which
+override TOML values, which override defaults. Environment names include
+`BRUNEL_DATA_DIR`, `BRUNEL_CACHE_DIR`, `BRUNEL_CONFIG_DIR`,
+`BRUNEL_DATABASE_PATH`, and `BRUNEL_IDLE_TIMEOUT`. Configuration changes take
+effect when the daemon restarts; reconnecting a client does not reload them.
+The local socket location remains controlled separately by `BRUNEL_RUNTIME_DIR`.
+
+Only the daemon lock owner creates the database directories and runs Alembic
+migrations. Database setup completes before clients can connect, and its engine
+is disposed when the daemon stops.

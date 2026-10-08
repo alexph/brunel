@@ -6,11 +6,23 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, inspect
 
 from brunel.client import DaemonClient
 from brunel.daemon.state import DaemonState
 from brunel.rest.app import create_app
+
+
+@pytest.fixture(autouse=True)
+def isolated_settings(monkeypatch, tmp_path):
+    config = tmp_path / "brunel.toml"
+    config.write_text("")
+    monkeypatch.setenv("BRUNEL_CONFIG_FILE", str(config))
+    monkeypatch.setenv("BRUNEL_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.delenv("BRUNEL_DATABASE_PATH", raising=False)
+    monkeypatch.delenv("BRUNEL_IDLE_TIMEOUT", raising=False)
 
 
 def test_shared_snapshots_and_events():
@@ -65,7 +77,7 @@ def test_idle_lifetime_and_live_work():
     asyncio.run(check())
 
 
-def test_real_socket_shared_daemon_and_idle_exit():
+def test_real_socket_shared_daemon_and_idle_exit(tmp_path):
     async def check(directory, process):
         first = DaemonClient(directory)
         second = DaemonClient(directory)
@@ -99,6 +111,11 @@ def test_real_socket_shared_daemon_and_idle_exit():
         await asyncio.to_thread(process.wait, 3)
         assert process.returncode == 0
         assert not (directory / "daemon.sock").exists()
+        engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'data' / 'brunel.sqlite3'}")
+        try:
+            assert inspect(engine).get_table_names() == ["alembic_version", "projects"]
+        finally:
+            engine.dispose()
 
     with tempfile.TemporaryDirectory(prefix="brn-", dir="/tmp") as name:
         directory = Path(name)

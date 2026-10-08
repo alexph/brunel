@@ -1,5 +1,4 @@
 from pathlib import Path
-from types import SimpleNamespace
 
 from sqlalchemy import create_engine, inspect, text
 
@@ -11,14 +10,10 @@ from brunel.app.db import (
 )
 
 
-def test_get_database_url_uses_user_data_directory(monkeypatch, tmp_path: Path) -> None:
+def test_get_database_url_does_not_create_directories(tmp_path: Path) -> None:
     data_path = tmp_path / "nested" / "data"
-    monkeypatch.setattr(
-        "brunel.app.db.get_locations", lambda: SimpleNamespace(data=data_path)
-    )
-
-    assert get_database_url().endswith(f"/{DATABASE_FILENAME}")
-    assert data_path.is_dir()
+    assert get_database_url(data_path / DATABASE_FILENAME).endswith(f"/{DATABASE_FILENAME}")
+    assert not data_path.exists()
 
 
 def test_bootstrap_upgrades_explicit_database(tmp_path: Path) -> None:
