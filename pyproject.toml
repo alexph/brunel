@@ -20,6 +20,7 @@ dependencies = [
     "httpx>=0.28.1",
     "websockets>=17.0.1",
     "anyio>=4.13.0",
+    "textual-dev>=1.8.0",
 ]
 
 [project.scripts]

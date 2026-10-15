@@ -49,6 +49,13 @@ def test_placeholder_screens(tmp_path):
 
     async def check():
         class FakeClient:
+            async def projects(self):
+                return []
+
+            async def project_by_path(self, path):
+                from brunel.protocol import ProjectView
+                return ProjectView(id=1, name=path.name, location=str(path))
+
             async def events(self):
                 await asyncio.Event().wait()
                 yield
@@ -56,6 +63,7 @@ def test_placeholder_screens(tmp_path):
         for path, screen_type in [(None, MainScreen), (tmp_path, ProjectScreen)]:
             app = BrunelApp(project_path=path, client=FakeClient())
             async with app.run_test() as pilot:
+                await pilot.pause()
                 assert isinstance(app.screen, screen_type)
                 await pilot.press("q")
 

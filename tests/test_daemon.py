@@ -101,6 +101,11 @@ def test_real_socket_shared_daemon_and_idle_exit(tmp_path):
             assert initial.payload.pid == snapshot.payload.pid == process.pid
             assert snapshot.payload == update.payload
             assert snapshot.payload.clients == 2
+            project = await first.create_project(tmp_path)
+            assert (await anext(one)).payload == project
+            assert (await anext(two)).payload == project
+            assert await second.project_by_path(tmp_path) == project
+            assert await second.projects() == [project]
             await one.aclose()
             assert (await anext(two)).payload.clients == 1
             await asyncio.sleep(0.4)

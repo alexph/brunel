@@ -4,12 +4,12 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from brunel.protocol import DaemonStatus, StatusEvent
+from brunel.protocol import DaemonStatus, Event, ProjectEvent, ProjectView, StatusEvent
 
 
 class Subscriber:
     def __init__(self, capacity: int):
-        self.queue: asyncio.Queue[StatusEvent] = asyncio.Queue(maxsize=capacity)
+        self.queue: asyncio.Queue[Event] = asyncio.Queue(maxsize=capacity)
         self.overflow = asyncio.Event()
 
 
@@ -37,12 +37,19 @@ class DaemonState:
     def publish(self) -> None:
         self.sequence += 1
         event = StatusEvent(type="daemon.status", sequence=self.sequence, payload=self.status())
+        self.broadcast(event)
+        self.changed.set()
+
+    def project_created(self, project: ProjectView) -> None:
+        self.sequence += 1
+        self.broadcast(ProjectEvent(sequence=self.sequence, payload=project))
+
+    def broadcast(self, event: Event) -> None:
         for subscriber in self.subscribers:
             try:
                 subscriber.queue.put_nowait(event)
             except asyncio.QueueFull:
                 subscriber.overflow.set()
-        self.changed.set()
 
     def subscribe(self) -> Subscriber:
         if self.closing:

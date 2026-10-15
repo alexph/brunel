@@ -2,7 +2,11 @@
 
 Run `brunel` to open the main terminal screen, or `brunel .` to open the
 current directory's project screen. You can also use `brunel open PATH`.
-The screens are placeholders; opening a directory does not register or trust it.
+For an unknown directory, a centered dialog asks you to trust the folder and add
+a project. Confirming registers its canonical absolute path; Cancel or Escape
+returns to the project list without registering it. Existing projects open
+directly. Select a project in the main list to open it; Escape returns to the list.
+The project screen shows its name and path; running work is not connected yet.
 
 Named commands take precedence over directory names. Use `./server` to open a
 directory named `server`. Unknown command names produce a CLI error.
@@ -30,7 +34,15 @@ Detached daemon output goes to `daemon.log` in that directory.
 status events with sequence numbers scoped to the daemon run. Each client has a
 64-event outgoing queue; overflow disconnects that client so it can reconnect for
 a fresh snapshot. The TUI reconnects automatically after connection loss.
-Remote connections, task persistence, and project registration remain pending.
+Remote connections and task execution remain pending.
+
+`GET /projects` lists registered projects, `GET /projects/by-path?path=...` looks
+up an absolute directory path, and `POST /projects` registers a trusted directory
+with a `location` field. Registration is idempotent, including concurrent requests
+and symlink aliases. New projects produce `project.created` events so other TUIs
+refresh their lists. No project configuration is loaded or work started during
+lookup or registration. Registering a folder records the user's trust decision;
+future configuration loading and execution must use registered projects.
 
 The daemon loads `brunel.toml` from Brunel's platform-specific user config
 directory. A missing default file uses defaults. Set `BRUNEL_CONFIG_FILE` or run

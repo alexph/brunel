@@ -11,7 +11,7 @@ from websockets.asyncio.client import unix_connect
 from websockets.exceptions import ConnectionClosed, InvalidHandshake
 
 from brunel.daemon.paths import runtime_directory
-from brunel.protocol import PROTOCOL_VERSION, DaemonStatus, StatusEvent
+from brunel.protocol import PROTOCOL_VERSION, DaemonStatus, Event, ProjectView, StatusEvent, event_adapter
 
 
 class ProtocolMismatch(RuntimeError):
@@ -63,12 +63,36 @@ class DaemonClient:
                     next_spawn = now + 0.5
                 await asyncio.sleep(0.1)
 
-    async def events(self) -> AsyncIterator[StatusEvent]:
+    async def request(self, method: str, path: str, **kwargs) -> httpx.Response:
+        await self.ensure_running()
+        transport = httpx.AsyncHTTPTransport(uds=str(self.socket))
+        async with httpx.AsyncClient(transport=transport, base_url="http://brunel", timeout=5) as client:
+            response = await client.request(method, path, **kwargs)
+            if response.status_code != 404:
+                response.raise_for_status()
+            return response
+
+    async def projects(self) -> list[ProjectView]:
+        response = await self.request("GET", "/projects")
+        response.raise_for_status()
+        return [ProjectView.model_validate(item) for item in response.json()]
+
+    async def project_by_path(self, path: Path) -> ProjectView | None:
+        response = await self.request("GET", "/projects/by-path", params={"path": str(path)})
+        return None if response.status_code == 404 else ProjectView.model_validate(response.json())
+
+    async def create_project(self, path: Path) -> ProjectView:
+        response = await self.request("POST", "/projects", json={"location": str(path)})
+        response.raise_for_status()
+        return ProjectView.model_validate(response.json())
+
+    async def events(self) -> AsyncIterator[Event]:
         await self.ensure_running()
         async with unix_connect(str(self.socket), uri="ws://brunel/events", open_timeout=2) as websocket:
             async for message in websocket:
-                event = StatusEvent.model_validate_json(message)
-                self.check_version(event.payload)
+                event = event_adapter.validate_json(message)
+                if isinstance(event, StatusEvent):
+                    self.check_version(event.payload)
                 yield event
 
 

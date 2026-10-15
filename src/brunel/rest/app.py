@@ -10,6 +10,7 @@ from brunel.app.db import Database
 from brunel.app.runtime import RuntimeConfig
 from brunel.daemon.state import DaemonState
 from brunel.protocol import DaemonStatus
+from brunel.rest.endpoints import router
 
 
 def create_app(
@@ -30,6 +31,7 @@ def create_app(
     app.state.daemon = state
     app.state.runtime = runtime
     app.state.database = database
+    app.include_router(router)
 
     @app.middleware("http")
     async def track_request(request, call_next):
