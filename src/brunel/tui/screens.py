@@ -8,6 +8,9 @@ from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Header, Static
 
 from brunel.protocol import ProjectView
+from brunel.tui.chat import ChatScreen
+from brunel.tui.conversation import ConversationStore
+from brunel.tui.stores import StoreKey, StoreRouter
 from brunel.tui.widgets import ProjectTable
 
 
@@ -19,7 +22,7 @@ class MainScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        # yield Static("Connecting to daemon…", id="daemon-status", markup=False)
+        yield Static("Connecting to daemon…", id="daemon-status", markup=False)
         # yield Static("Projects", id="project-list-message", markup=False)
         yield ProjectTable(id="project-list")
         yield Footer()
@@ -28,27 +31,24 @@ class MainScreen(Screen):
         self.app.open_registered_project(event.project)
 
 
-class ProjectScreen(Screen):
+class ProjectScreen(ChatScreen):
     BINDINGS = [("escape", "projects", "Projects")]
 
-    def __init__(self, project: ProjectView):
-        super().__init__()
+    def __init__(self, project: ProjectView, *, router: StoreRouter | None = None):
+        router = router if router is not None else StoreRouter()
+        key = StoreKey("conversation", f"project:{project.id}:draft")
+        try:
+            store = router.get(key)
+        except KeyError:
+            store = ConversationStore(key.id)
+            router.register(key, store)
+        super().__init__(store=store, router=router, key=key)
         self.project = project
         self.project_path = Path(project.location)
+        self.sub_title = project.name
 
     def action_projects(self) -> None:
         self.app.pop_screen()
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Static("Connecting to daemon…", id="daemon-status", markup=False)
-        yield Static(
-            f"Project: {self.project.name}\n{self.project_path}\n\n"
-            "Running work is not connected yet.",
-            markup=False,
-        )
-        yield Footer()
-
 
 class TrustProjectScreen(ModalScreen[ProjectView | None]):
     DEFAULT_CSS = """

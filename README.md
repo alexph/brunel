@@ -6,7 +6,24 @@ For an unknown directory, a centered dialog asks you to trust the folder and add
 a project. Confirming registers its canonical absolute path; Cancel or Escape
 returns to the project list without registering it. Existing projects open
 directly. Select a project in the main list to open it; Escape returns to the list.
-The project screen shows its name and path; running work is not connected yet.
+The project screen opens a chat shell with a scrollable transcript and a
+bottom-docked composer. The multiline input grows between TCSS height bounds;
+it does not submit messages or start work yet. Escape returns to the project list.
+
+The chat UI consumes typed AG-UI events through a plain-Python
+`ConversationStore`. `BrunelApp.apply_store_event(StoreKey(kind, id), event)`
+routes an update to a registered store and notifies matching chat screens.
+Object kinds and IDs are explicit: project, thread and conversation stores can
+coexist without guessing a destination from event payloads. Only conversation
+stores and their views are implemented today; this does not add runtime threads.
+Message widgets update in place, preserving draft text, expanded tool details
+and the reader's scroll position. Snapshots, streamed text/tool calls, reasoning
+and activity payloads are supported, with plain-text fallbacks for rich content.
+Interrupts are retained as pending state, not executable approval controls;
+frontend tool execution, durable chat history and daemon chat transport remain
+unconnected. Unknown custom/raw events produce a status notice rather than
+executing a renderer. Web links require explicit activation; local file links
+and opaque provider handles are not opened automatically.
 
 Named commands take precedence over directory names. Use `./server` to open a
 directory named `server`. Unknown command names produce a CLI error.

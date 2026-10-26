@@ -11,6 +11,8 @@ from brunel.protocol import ProjectEvent, ProjectView, StatusEvent
 from brunel.tui.screens import MainScreen, ProjectScreen, TrustProjectScreen
 from brunel.tui.themes import arctic_theme, blueprint_theme
 from brunel.tui.widgets import ProjectTable
+from brunel.tui.stores import StoreKey, StoreRouter
+from brunel.tui.chat import ChatScreen
 
 
 class BrunelApp(App):
@@ -26,6 +28,7 @@ class BrunelApp(App):
         self.connection_text = "Connecting to daemon…"
         self.main_screen = MainScreen()
         self.projects_lock = asyncio.Lock()
+        self.stores = StoreRouter()
 
     async def on_mount(self) -> None:
         self.register_theme(arctic_theme)
@@ -74,8 +77,14 @@ class BrunelApp(App):
             pass
 
     def open_registered_project(self, project: ProjectView) -> None:
-        self.push_screen(ProjectScreen(project), self.project_closed)
+        self.push_screen(ProjectScreen(project, router=self.stores), self.project_closed)
         self.call_after_refresh(lambda: self.set_status(self.connection_text))
+
+    def apply_store_event(self, key: StoreKey, event: object) -> None:
+        change = self.stores.dispatch(key, event)
+        for screen in self.screen_stack:
+            if isinstance(screen, ChatScreen) and screen.store_key == key:
+                screen.receive_change(change)
 
     def project_closed(self, result=None) -> None:
         self.set_status(self.connection_text)
