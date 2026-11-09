@@ -38,16 +38,21 @@ Read the linked skill in full for any principle you apply. Each entry names when
 - [Model the domain](../principle-model-the-domain/SKILL.md). Designing stateful logic, related flags, or repeated shape-dependent branches. Represent concepts, valid relationships, and transitions with structures that support actual access patterns.
 - [Give responsibilities a home](../principle-give-responsibilities-a-home/SKILL.md). Decisions, mutable state, or invariants appear in several places. Identify their owner and keep enforcement there.
 - [Make concurrency explicit](../principle-make-concurrency-explicit/SKILL.md). Actors can overlap while using mutable state or effects. Trace interleavings, isolate state where valid, and enforce shared invariants at the appropriate atomic boundary.
-- [Boundary discipline](../principle-boundary-discipline/SKILL.md). Wiring validation, error handling, or framework adapters. Establish trust at boundaries and preserve guarantees inside.
+- [Boundary discipline](../principle-boundary-discipline/SKILL.md). Parsing CLI arguments, config, requests, or external API responses; adding validation or error handling; or changing framework adapters. Establish trust at system boundaries, trust internal code, and keep domain logic pure.
+- [Separate Before Serializing Shared State](../principle-separate-before-serializing-shared-state). Concurrent actors might write the same file, branch, key, or object. Eliminate the sharing first.
 
 ### Verification
 
 - [Sequence work into verifiable units](../principle-sequence-work-into-verifiable-units/SKILL.md). Planning or executing multi-step work, migrations, or a sequence of commits or PRs. Prioritize demonstrated prerequisites, verify each coherent unit before building on it, and check the integrated result.
 - [Finish the behavioral path](../principle-finish-the-behavioral-path/SKILL.md). A change crosses producers, consumers, persistence, or delivery paths. Complete the connected work needed for the caller's result.
-- [Fix root causes](../principle-fix-root-causes/SKILL.md). Debugging a defect or facing successive failed fixes. Trace and correct the first violated assumption or invariant.
-- [Pragmatic tests](../principle-pragmatic-tests/SKILL.md). Writing, changing, reviewing, or pruning tests. Protect meaningful behavior through the caller's boundary.
+- [Fix root causes](../principle-fix-root-causes/SKILL.md). Apply when debugging defects or when successive fixes fail to resolve a symptom. Trace the first incorrect assumption, decision, or state transition and correct it at its owner.
+- [Test behavior, not implementation](../principle-test-behavior-not-implementation/SKILL.md). Apply when you write, change, or keep a test. Assert what the code's users can observe, so the test fails when that behavior breaks and keeps passing when only the internals change.
 - [Seek evidence that could prove you wrong](../principle-seek-evidence-that-could-prove-you-wrong/SKILL.md). Choosing checks or assessing the strength of evidence. Challenge consequential assumptions with independent expectations and plausible failure cases.
 - [Prove your work](../principle-prove-your-work/SKILL.md). Marking a unit verified, declaring completion, or handing work over. Demonstrate the claimed outcome against the final state and disclose verification limits.
+
+### Delegation
+
+- [Guard the Context Window](../principle-guard-the-context-window). Context fills up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents, keep summaries in the main thread.
 
 ### Meta
 
