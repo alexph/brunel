@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid7
 
 from typer.testing import CliRunner
 
@@ -54,7 +55,7 @@ def test_placeholder_screens(tmp_path):
 
             async def project_by_path(self, path):
                 from brunel.protocol import ProjectView
-                return ProjectView(id=1, name=path.name, location=str(path))
+                return ProjectView(id=uuid7(), name=path.name, location=str(path))
 
             async def events(self):
                 await asyncio.Event().wait()

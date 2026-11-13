@@ -4,6 +4,11 @@
 
 Brunel is a Python terminal application for registering trusted local project directories and coordinating multiple TUI clients through one per-user daemon. The current product includes project registration, a Textual UI, REST/WebSocket daemon communication over a Unix socket, SQLite persistence, runtime configuration, and initial agent/skill/MCP discovery. Task execution and project-work integration are not implemented; do not assume those flows exist.
 
+## Code Patterns
+
+Before writing or updating code, read [.agents/patterns/index.md](.agents/patterns/index.md)
+and the pattern files whose triggers apply. Apply those rules to the code you change.
+
 ## Architecture & Data Flow
 
 - `src/brunel/cli.py` is the Typer entry point. It routes named commands, directory shorthand, the default TUI launch, and the foreground server.

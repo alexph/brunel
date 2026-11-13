@@ -1,8 +1,9 @@
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter
 
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 
 
 class DaemonStatus(BaseModel):
@@ -22,7 +23,7 @@ class StatusEvent(BaseModel):
 
 
 class ProjectView(BaseModel):
-    id: int
+    id: UUID
     name: str
     location: str
 

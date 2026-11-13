@@ -24,22 +24,25 @@ def test_bootstrap_upgrades_explicit_database(tmp_path: Path) -> None:
 
     engine = create_engine(database_url)
     inspector = inspect(engine)
-    assert inspector.get_table_names() == ["alembic_version", "projects"]
+    assert inspector.get_table_names() == [
+        "alembic_version", "projects", "thread_events", "thread_inbox",
+        "thread_messages", "threads",
+    ]
     project_columns = {
         column["name"]: column for column in inspector.get_columns("projects")
     }
-    assert set(project_columns) == {"id", "name", "location"}
+    assert set(project_columns) == {"id", "name", "local_dir", "git_url", "created_at", "updated_at"}
     assert project_columns["id"]["primary_key"] == 1
     assert {
         tuple(index["column_names"])
         for index in inspector.get_unique_constraints("projects")
-    } == {("location",)}
+    } == {("local_dir",)}
     with engine.connect() as connection:
         assert (
             connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            == "0001_create_projects"
+            == "0002_conversation_model"
         )
 
 

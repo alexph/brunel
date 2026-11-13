@@ -2,7 +2,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import URL, Engine, create_engine
+from sqlalchemy import URL, Engine, create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -35,6 +35,11 @@ def bootstrap(database_url: str) -> None:
 class Database:
     def __init__(self, database_url: str):
         self.engine: Engine = create_engine(database_url)
+        if self.engine.dialect.name == "sqlite":
+            @event.listens_for(self.engine, "connect")
+            def enable_foreign_keys(connection, _record):
+                connection.execute("PRAGMA foreign_keys = ON")
+
         self.sessions: sessionmaker[Session] = sessionmaker(self.engine)
 
     def close(self) -> None:

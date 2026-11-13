@@ -100,7 +100,10 @@ def test_bootstrap_and_sessions_with_percent_in_path(tmp_path):
     database = Database(runtime.database_url)
     try:
         with database.sessions() as session:
-            assert inspect(session.connection()).get_table_names() == ["alembic_version", "projects"]
+            assert inspect(session.connection()).get_table_names() == [
+                "alembic_version", "projects", "thread_events", "thread_inbox",
+                "thread_messages", "threads",
+            ]
     finally:
         database.close()
 

@@ -118,7 +118,10 @@ def test_real_socket_shared_daemon_and_idle_exit(tmp_path):
         assert not (directory / "daemon.sock").exists()
         engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'data' / 'brunel.sqlite3'}")
         try:
-            assert inspect(engine).get_table_names() == ["alembic_version", "projects"]
+            assert inspect(engine).get_table_names() == [
+                "alembic_version", "projects", "thread_events", "thread_inbox",
+                "thread_messages", "threads",
+            ]
         finally:
             engine.dispose()
 

@@ -1,5 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -35,6 +36,7 @@ def test_endpoints_lookup_create_and_broadcast(database, tmp_path):
             response = client.post("/projects", json={"location": str(tmp_path)})
             assert response.status_code == 200
             project = response.json()
+            assert UUID(project["id"]).version == 7
             event = events.receive_json()
             assert event["type"] == "project.created"
             assert event["payload"] == project
