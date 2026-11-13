@@ -12,7 +12,9 @@ from pydantic_settings import (
 
 class Settings(BaseSettings):
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
-        extra="ignore", env_prefix="brunel_", frozen=True,
+        extra="ignore",
+        env_prefix="brunel_",
+        frozen=True,
     )
     data_dir: Path | None = None
     config_dir: Path | None = None

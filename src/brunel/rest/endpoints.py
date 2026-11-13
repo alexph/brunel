@@ -28,7 +28,9 @@ async def list_projects(request: Request):
 @router.get("/projects/by-path", response_model=ProjectView)
 async def project_by_path(request: Request, path: str):
     location = await run_in_threadpool(directory, path)
-    project = await run_in_threadpool(projects.find_project, database(request), location)
+    project = await run_in_threadpool(
+        projects.find_project, database(request), location
+    )
     if project is None:
         raise HTTPException(404, "Project not registered")
     return project
@@ -37,7 +39,9 @@ async def project_by_path(request: Request, path: str):
 @router.post("/projects", response_model=ProjectView)
 async def create_project(request: Request, body: CreateProject):
     location = await run_in_threadpool(directory, body.location)
-    project, created = await run_in_threadpool(projects.add_project, database(request), location)
+    project, created = await run_in_threadpool(
+        projects.add_project, database(request), location
+    )
     if created:
         request.app.state.daemon.project_created(project)
     return project

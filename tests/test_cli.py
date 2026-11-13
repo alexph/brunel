@@ -10,7 +10,9 @@ from brunel.tui.screens import MainScreen, ProjectScreen
 
 def test_launch_routes(tmp_path, monkeypatch):
     launches = []
-    monkeypatch.setattr(cli, "launch_tui", lambda project_path=None: launches.append(project_path))
+    monkeypatch.setattr(
+        cli, "launch_tui", lambda project_path=None: launches.append(project_path)
+    )
     runner = CliRunner()
     assert runner.invoke(cli.app, []).exit_code == 0
     assert runner.invoke(cli.app, cli.route_args([str(tmp_path)])).exit_code == 0
@@ -35,7 +37,10 @@ def test_help_and_invalid_paths_do_not_launch(monkeypatch, tmp_path):
     runner = CliRunner()
     assert runner.invoke(cli.app, ["--help"]).exit_code == 0
     assert runner.invoke(cli.app, ["unknown"]).exit_code == 2
-    assert runner.invoke(cli.app, cli.route_args([str(tmp_path / "missing")])).exit_code == 2
+    assert (
+        runner.invoke(cli.app, cli.route_args([str(tmp_path / "missing")])).exit_code
+        == 2
+    )
 
 
 def test_server_command(monkeypatch):
@@ -55,6 +60,7 @@ def test_placeholder_screens(tmp_path):
 
             async def project_by_path(self, path):
                 from brunel.protocol import ProjectView
+
                 return ProjectView(id=uuid7(), name=path.name, location=str(path))
 
             async def events(self):

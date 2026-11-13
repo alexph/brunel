@@ -40,7 +40,10 @@ def test_docked_composer_grows_to_cap_and_retains_focus():
             assert editor.outer_size.height <= 10
             assert transcript.region.bottom <= composer.region.y
             assert composer.region.bottom <= screen.query_one(Footer).region.y
-            assert screen.query_one(Header).region.bottom <= screen.query_one("#chat-status").region.y
+            assert (
+                screen.query_one(Header).region.bottom
+                <= screen.query_one("#chat-status").region.y
+            )
             assert app.focused is editor
             assert editor.text.endswith("Line 29")
             editor.load_text("")
@@ -59,13 +62,19 @@ def test_targeted_updates_keep_widget_identity_draft_and_collapsed_state():
             editor.load_text("unsent draft")
             screen.apply_event(ag.RunStartedEvent(thread_id="thread", run_id="run"))
             screen.apply_event(ag.TextMessageStartEvent(message_id="message"))
-            screen.apply_event(ag.TextMessageContentEvent(message_id="message", delta="Hello"))
+            screen.apply_event(
+                ag.TextMessageContentEvent(message_id="message", delta="Hello")
+            )
             await pilot.pause()
             transcript = screen.query_one(Transcript)
             widget = transcript.messages["message"]
             assert widget.query_one(Markdown).source == "Hello"
-            assert "Assistant" in str(widget.query_one(".message-label", Static).content)
-            screen.apply_event(ag.TextMessageContentEvent(message_id="message", delta=" world"))
+            assert "Assistant" in str(
+                widget.query_one(".message-label", Static).content
+            )
+            screen.apply_event(
+                ag.TextMessageContentEvent(message_id="message", delta=" world")
+            )
             await pilot.pause()
             assert transcript.messages["message"] is widget
             assert widget.entry.content == "Hello world"
@@ -78,7 +87,9 @@ def test_targeted_updates_keep_widget_identity_draft_and_collapsed_state():
             await pilot.pause()
             assert widget.entry.status == "complete"
 
-            screen.apply_event(ag.ToolCallStartEvent(tool_call_id="tool", tool_call_name="read"))
+            screen.apply_event(
+                ag.ToolCallStartEvent(tool_call_id="tool", tool_call_name="read")
+            )
             screen.apply_event(ag.ToolCallArgsEvent(tool_call_id="tool", delta="{}"))
             await pilot.pause()
             details = transcript.messages["tool:tool"].query_one(Collapsible)
@@ -100,7 +111,11 @@ def test_links_only_open_web_urls():
             await pilot.pause()
             widget = screen.query_one(ChatMessage)
             markdown = widget.query_one(Markdown)
-            for href in ["file:///etc/passwd", "javascript:alert(1)", "https://example.com"]:
+            for href in [
+                "file:///etc/passwd",
+                "javascript:alert(1)",
+                "https://example.com",
+            ]:
                 widget.on_markdown_link_clicked(Markdown.LinkClicked(markdown, href))
             assert opened == ["https://example.com"]
 
@@ -112,12 +127,18 @@ def test_stream_does_not_pull_reader_from_earlier_messages():
         app, screen = chat_app()
         async with app.run_test(size=(70, 20)) as pilot:
             for number in range(15):
-                screen.apply_event(ag.TextMessageChunkEvent(message_id=str(number), delta="A message\n\nMore content"))
+                screen.apply_event(
+                    ag.TextMessageChunkEvent(
+                        message_id=str(number), delta="A message\n\nMore content"
+                    )
+                )
             await pilot.pause()
             transcript = screen.query_one(Transcript)
             transcript.scroll_home(animate=False)
             await pilot.pause()
-            screen.apply_event(ag.TextMessageChunkEvent(message_id="last", delta="New content"))
+            screen.apply_event(
+                ag.TextMessageChunkEvent(message_id="last", delta="New content")
+            )
             await pilot.pause()
             assert transcript.scroll_y == 0
             assert transcript.messages["14"].entry.status == "complete"

@@ -92,3 +92,31 @@ The local socket location remains controlled separately by `BRUNEL_RUNTIME_DIR`.
 Only the daemon lock owner creates the database directories and runs Alembic
 migrations. Database setup completes before clients can connect, and its engine
 is disposed when the daemon stops.
+
+## Development
+
+Install the locked dependencies, including Ruff:
+
+```sh
+uv sync
+```
+
+Check lint and formatting:
+
+```sh
+uv run ruff check .
+uv run ruff format --check .
+```
+
+Apply lint fixes and format the code:
+
+```sh
+uv run ruff check --fix .
+uv run ruff format .
+```
+
+Run the tests:
+
+```sh
+uv run pytest
+```

@@ -36,6 +36,7 @@ class Database:
     def __init__(self, database_url: str):
         self.engine: Engine = create_engine(database_url)
         if self.engine.dialect.name == "sqlite":
+
             @event.listens_for(self.engine, "connect")
             def enable_foreign_keys(connection, _record):
                 connection.execute("PRAGMA foreign_keys = ON")

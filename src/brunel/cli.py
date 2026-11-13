@@ -39,7 +39,11 @@ def run_server(
         None, min=0.1, help="Seconds to wait before idle shutdown (default: 30)."
     ),
     config_file: Path | None = typer.Option(
-        None, "--config", exists=True, dir_okay=False, resolve_path=True,
+        None,
+        "--config",
+        exists=True,
+        dir_okay=False,
+        resolve_path=True,
         help="User TOML configuration file.",
     ),
 ):

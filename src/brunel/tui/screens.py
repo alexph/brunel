@@ -50,6 +50,7 @@ class ProjectScreen(ChatScreen):
     def action_projects(self) -> None:
         self.app.pop_screen()
 
+
 class TrustProjectScreen(ModalScreen[ProjectView | None]):
     DEFAULT_CSS = """
     TrustProjectScreen { align: center middle; background: $background 70%; }

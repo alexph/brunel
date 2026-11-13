@@ -4,15 +4,14 @@ from pathlib import Path
 import httpx
 from textual import work
 from textual.app import App
-from textual.widgets import Static
 
 from brunel.client import CONNECTION_ERRORS, DaemonClient
 from brunel.protocol import ProjectEvent, ProjectView, StatusEvent
+from brunel.tui.chat import ChatScreen
 from brunel.tui.screens import MainScreen, ProjectScreen, TrustProjectScreen
+from brunel.tui.stores import StoreKey, StoreRouter
 from brunel.tui.themes import arctic_theme, blueprint_theme
 from brunel.tui.widgets import ProjectTable
-from brunel.tui.stores import StoreKey, StoreRouter
-from brunel.tui.chat import ChatScreen
 
 
 class BrunelApp(App):
@@ -70,14 +69,16 @@ class BrunelApp(App):
                 if project is not None:
                     self.open_registered_project(project)
             await self.refresh_projects()
-        except (httpx.HTTPError, OSError, RuntimeError) as error:
+        except httpx.HTTPError, OSError, RuntimeError:
             # self.main_screen.query_one("#project-list-message", Static).update(
             #     f"Could not load projects: {error}"
             # )
             pass
 
     def open_registered_project(self, project: ProjectView) -> None:
-        self.push_screen(ProjectScreen(project, router=self.stores), self.project_closed)
+        self.push_screen(
+            ProjectScreen(project, router=self.stores), self.project_closed
+        )
         self.call_after_refresh(lambda: self.set_status(self.connection_text))
 
     def apply_store_event(self, key: StoreKey, event: object) -> None:

@@ -49,14 +49,20 @@ def thread_id(database, tmp_path):
 def test_project_and_child_thread_persist_with_uuid7_keys(database, tmp_path):
     with database.sessions.begin() as session:
         project = Project(
-            name="Brunel", local_dir=str(tmp_path), git_url="https://github.com/alexph/brunel.git"
+            name="Brunel",
+            local_dir=str(tmp_path),
+            git_url="https://github.com/alexph/brunel.git",
         )
         session.add(project)
         session.flush()
         parent = Thread(project_id=project.id)
         session.add(parent)
         session.flush()
-        child = Thread(project_id=project.id, parent_thread_id=parent.id, title="Investigate migrations")
+        child = Thread(
+            project_id=project.id,
+            parent_thread_id=parent.id,
+            title="Investigate migrations",
+        )
         session.add(child)
         session.flush()
         project_id, parent_id, child_id = project.id, parent.id, child.id
@@ -79,32 +85,56 @@ def test_project_and_child_thread_persist_with_uuid7_keys(database, tmp_path):
 def test_native_message_history_round_trips_in_sequence(database, thread_id):
     messages = [
         ModelRequest(parts=[UserPromptPart(content="Read the project")]),
-        ModelResponse(parts=[ToolCallPart(tool_name="read", args={"path": "README.md"}, tool_call_id="read-1")]),
-        ModelRequest(parts=[ToolReturnPart(tool_name="read", content="Brunel", tool_call_id="read-1")]),
+        ModelResponse(
+            parts=[
+                ToolCallPart(
+                    tool_name="read", args={"path": "README.md"}, tool_call_id="read-1"
+                )
+            ]
+        ),
+        ModelRequest(
+            parts=[
+                ToolReturnPart(
+                    tool_name="read", content="Brunel", tool_call_id="read-1"
+                )
+            ]
+        ),
         ModelResponse(parts=[TextPart(content="The project is Brunel.")]),
     ]
     payloads = ModelMessagesTypeAdapter.dump_python(messages, mode="json")
     with database.sessions.begin() as session:
         for sequence, payload in reversed(list(enumerate(payloads, start=1))):
-            session.add(ThreadMessage(thread_id=thread_id, sequence=sequence, payload=payload))
+            session.add(
+                ThreadMessage(thread_id=thread_id, sequence=sequence, payload=payload)
+            )
 
     with database.sessions() as session:
         records = session.scalars(
-            select(ThreadMessage).where(ThreadMessage.thread_id == thread_id).order_by(ThreadMessage.sequence)
+            select(ThreadMessage)
+            .where(ThreadMessage.thread_id == thread_id)
+            .order_by(ThreadMessage.sequence)
         ).all()
-        restored = ModelMessagesTypeAdapter.validate_python([record.payload for record in records])
+        restored = ModelMessagesTypeAdapter.validate_python(
+            [record.payload for record in records]
+        )
         assert restored == messages
-        assert all(record.id.version == 7 and record.format_version == 1 for record in records)
+        assert all(
+            record.id.version == 7 and record.format_version == 1 for record in records
+        )
 
 
 def test_native_stream_event_persists_separately_from_history(database, thread_id):
     event = PartStartEvent(index=0, part=TextPart(content="Hello"))
     adapter = TypeAdapter(PartStartEvent)
     with database.sessions.begin() as session:
-        session.add(ThreadEvent(
-            thread_id=thread_id, sequence=1, kind=event.event_kind,
-            payload=adapter.dump_python(event, mode="json"),
-        ))
+        session.add(
+            ThreadEvent(
+                thread_id=thread_id,
+                sequence=1,
+                kind=event.event_kind,
+                payload=adapter.dump_python(event, mode="json"),
+            )
+        )
 
     with database.sessions() as session:
         record = session.scalars(select(ThreadEvent)).one()
@@ -116,7 +146,8 @@ def test_native_stream_event_persists_separately_from_history(database, thread_i
 
 def test_inbox_persists_pending_input_and_consumption(database, thread_id):
     payload = ModelMessagesTypeAdapter.dump_python(
-        [ModelRequest(parts=[UserPromptPart(content="Also run the tests")])], mode="json"
+        [ModelRequest(parts=[UserPromptPart(content="Also run the tests")])],
+        mode="json",
     )[0]
     with database.sessions.begin() as session:
         item = ThreadInbox(thread_id=thread_id, sequence=1, payload=payload)
@@ -166,9 +197,15 @@ def test_threads_reject_missing_project_and_parent(database, thread_id):
         session.get(Thread, thread_id).parent_thread_id = thread_id
 
 
-@pytest.mark.parametrize("values", [
-    {"sequence": 0}, {"sequence": -1}, {"format_version": 0}, {"status": "unknown"},
-])
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"sequence": 0},
+        {"sequence": -1},
+        {"format_version": 0},
+        {"status": "unknown"},
+    ],
+)
 def test_inbox_rejects_invalid_order_version_or_status(database, thread_id, values):
     fields = {"sequence": 1, "payload": {}, **values}
     with pytest.raises(IntegrityError), database.sessions.begin() as session:
@@ -186,9 +223,11 @@ def test_upgrade_preserves_existing_projects(tmp_path):
     db = Database(url)
     try:
         with db.engine.begin() as connection:
-            connection.execute(text(
-                "INSERT INTO projects (id, name, location) VALUES (42, 'Brunel', '/work/brunel')"
-            ))
+            connection.execute(
+                text(
+                    "INSERT INTO projects (id, name, location) VALUES (42, 'Brunel', '/work/brunel')"
+                )
+            )
         bootstrap(url)
         bootstrap(url)
         with db.sessions() as session:
@@ -201,9 +240,9 @@ def test_upgrade_preserves_existing_projects(tmp_path):
         assert "projects_legacy" not in inspect(db.engine).get_table_names()
         command.downgrade(config, "0001_create_projects")
         with db.engine.connect() as connection:
-            assert connection.execute(text("SELECT name, location FROM projects")).one() == (
-                "Brunel", "/work/brunel"
-            )
+            assert connection.execute(
+                text("SELECT name, location FROM projects")
+            ).one() == ("Brunel", "/work/brunel")
         bootstrap(url)
         with db.sessions() as session:
             assert session.scalars(select(Project)).one().local_dir == "/work/brunel"

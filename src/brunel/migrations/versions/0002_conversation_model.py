@@ -19,30 +19,59 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("local_dir", sa.String(), nullable=False),
         sa.Column("git_url", sa.String(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_projects"),
         sa.UniqueConstraint("local_dir", name="uq_projects_local_dir"),
     )
     connection = op.get_bind()
     legacy = sa.table("projects_legacy", sa.column("name"), sa.column("location"))
     projects = sa.table(
-        "projects", sa.column("id", sa.Uuid()), sa.column("name"), sa.column("local_dir")
+        "projects",
+        sa.column("id", sa.Uuid()),
+        sa.column("name"),
+        sa.column("local_dir"),
     )
     for project in connection.execute(sa.select(legacy)).mappings():
-        connection.execute(projects.insert().values(
-            id=uuid7(), name=project["name"], local_dir=project["location"]
-        ))
+        connection.execute(
+            projects.insert().values(
+                id=uuid7(), name=project["name"], local_dir=project["location"]
+            )
+        )
     op.drop_table("projects_legacy")
 
     op.create_table(
         "threads",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("project_id", sa.Uuid(), sa.ForeignKey("projects.id"), nullable=False),
+        sa.Column(
+            "project_id", sa.Uuid(), sa.ForeignKey("projects.id"), nullable=False
+        ),
         sa.Column("title", sa.String(), nullable=True),
-        sa.Column("parent_thread_id", sa.Uuid(), sa.ForeignKey("threads.id"), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "parent_thread_id", sa.Uuid(), sa.ForeignKey("threads.id"), nullable=True
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
         sa.CheckConstraint("parent_thread_id != id", name="ck_threads_not_own_parent"),
     )
     op.create_index("ix_threads_project_id", "threads", ["project_id"])
@@ -54,10 +83,19 @@ def upgrade() -> None:
         sa.Column("sequence", sa.Integer(), nullable=False),
         sa.Column("payload", sa.JSON(), nullable=False),
         sa.Column("format_version", sa.Integer(), server_default="1", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.UniqueConstraint("thread_id", "sequence", name="uq_thread_messages_sequence"),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.UniqueConstraint(
+            "thread_id", "sequence", name="uq_thread_messages_sequence"
+        ),
         sa.CheckConstraint("sequence > 0", name="ck_thread_messages_sequence"),
-        sa.CheckConstraint("format_version > 0", name="ck_thread_messages_format_version"),
+        sa.CheckConstraint(
+            "format_version > 0", name="ck_thread_messages_format_version"
+        ),
     )
     op.create_table(
         "thread_events",
@@ -67,10 +105,17 @@ def upgrade() -> None:
         sa.Column("kind", sa.String(), nullable=False),
         sa.Column("payload", sa.JSON(), nullable=False),
         sa.Column("format_version", sa.Integer(), server_default="1", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
         sa.UniqueConstraint("thread_id", "sequence", name="uq_thread_events_sequence"),
         sa.CheckConstraint("sequence > 0", name="ck_thread_events_sequence"),
-        sa.CheckConstraint("format_version > 0", name="ck_thread_events_format_version"),
+        sa.CheckConstraint(
+            "format_version > 0", name="ck_thread_events_format_version"
+        ),
     )
     op.create_table(
         "thread_inbox",
@@ -81,8 +126,18 @@ def upgrade() -> None:
         sa.Column("format_version", sa.Integer(), server_default="1", nullable=False),
         sa.Column("status", sa.String(), server_default="pending", nullable=False),
         sa.Column("consumed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
         sa.UniqueConstraint("thread_id", "sequence", name="uq_thread_inbox_sequence"),
         sa.CheckConstraint("sequence > 0", name="ck_thread_inbox_sequence"),
         sa.CheckConstraint("format_version > 0", name="ck_thread_inbox_format_version"),
@@ -111,9 +166,13 @@ def downgrade() -> None:
     legacy = sa.table(
         "projects_legacy", sa.column("id"), sa.column("name"), sa.column("location")
     )
-    for index, project in enumerate(connection.execute(sa.select(projects)).mappings(), start=1):
-        connection.execute(legacy.insert().values(
-            id=index, name=project["name"], location=project["local_dir"]
-        ))
+    for index, project in enumerate(
+        connection.execute(sa.select(projects)).mappings(), start=1
+    ):
+        connection.execute(
+            legacy.insert().values(
+                id=index, name=project["name"], location=project["local_dir"]
+            )
+        )
     op.drop_table("projects")
     op.rename_table("projects_legacy", "projects")

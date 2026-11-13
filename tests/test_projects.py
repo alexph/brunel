@@ -4,14 +4,14 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from textual.widgets import Static
 
-from brunel.app.db import Database, bootstrap, get_database_url
 from brunel.app import projects
+from brunel.app.db import Database, bootstrap, get_database_url
 from brunel.daemon.state import DaemonState
 from brunel.rest.app import create_app
 from brunel.tui.app import BrunelApp
 from brunel.tui.screens import MainScreen, ProjectScreen, TrustProjectScreen
-from textual.widgets import Static
 from brunel.tui.widgets import ProjectTable
 
 
@@ -30,7 +30,10 @@ def test_endpoints_lookup_create_and_broadcast(database, tmp_path):
     state = DaemonState(service=True)
     with TestClient(create_app(state, lambda: None, database=database)) as client:
         assert client.get("/projects").json() == []
-        assert client.get("/projects/by-path", params={"path": str(tmp_path)}).status_code == 404
+        assert (
+            client.get("/projects/by-path", params={"path": str(tmp_path)}).status_code
+            == 404
+        )
         with client.websocket_connect("/events") as events:
             events.receive_json()
             response = client.post("/projects", json={"location": str(tmp_path)})
@@ -40,8 +43,16 @@ def test_endpoints_lookup_create_and_broadcast(database, tmp_path):
             event = events.receive_json()
             assert event["type"] == "project.created"
             assert event["payload"] == project
-            assert client.get("/projects/by-path", params={"path": str(tmp_path / ".")}).json() == project
-            assert client.post("/projects", json={"location": str(tmp_path)}).json() == project
+            assert (
+                client.get(
+                    "/projects/by-path", params={"path": str(tmp_path / ".")}
+                ).json()
+                == project
+            )
+            assert (
+                client.post("/projects", json={"location": str(tmp_path)}).json()
+                == project
+            )
             assert client.get("/projects").json() == [project]
 
 
@@ -52,18 +63,24 @@ def test_path_validation_and_symlink_identity(database, tmp_path):
     alias.symlink_to(folder, target_is_directory=True)
     file = tmp_path / "file"
     file.write_text("content")
-    with TestClient(create_app(DaemonState(service=True), lambda: None, database=database)) as client:
+    with TestClient(
+        create_app(DaemonState(service=True), lambda: None, database=database)
+    ) as client:
         for path in ("relative", str(tmp_path / "missing"), str(file)):
             assert client.post("/projects", json={"location": path}).status_code == 422
         created = client.post("/projects", json={"location": str(alias)}).json()
         assert created["location"] == str(folder.resolve())
-        assert client.post("/projects", json={"location": str(folder)}).json() == created
+        assert (
+            client.post("/projects", json={"location": str(folder)}).json() == created
+        )
         assert len(client.get("/projects").json()) == 1
 
 
 def test_concurrent_creation_returns_one_project(database, tmp_path):
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda _: projects.add_project(database, str(tmp_path)), range(2)))
+        results = list(
+            pool.map(lambda _: projects.add_project(database, str(tmp_path)), range(2))
+        )
     assert results[0][0] == results[1][0]
     assert sum(created for _, created in results) == 1
     assert len(projects.list_projects(database)) == 1
@@ -84,7 +101,9 @@ class LocalClient:
     async def create_project(self, path):
         if self.fail_creation:
             raise RuntimeError("Test creation failure")
-        project, created = await asyncio.to_thread(projects.add_project, self.database, str(path))
+        project, created = await asyncio.to_thread(
+            projects.add_project, self.database, str(path)
+        )
         if created:
             self.state.project_created(project)
         return project
@@ -124,7 +143,9 @@ def test_trust_cancel_confirm_and_existing_project(database, tmp_path):
             await pilot.click("#trust-confirm")
             await pilot.pause()
             assert isinstance(app.screen, TrustProjectScreen)
-            assert "Test creation failure" in str(app.screen.query_one("#trust-error", Static).content)
+            assert "Test creation failure" in str(
+                app.screen.query_one("#trust-error", Static).content
+            )
             assert projects.list_projects(database) == []
             client.fail_creation = False
             await pilot.pause(0.5)
@@ -160,7 +181,12 @@ def test_project_list_updates_in_other_tui(database, tmp_path):
                 await wait_screen(second, two, ProjectScreen)
                 for _ in range(100):
                     await first.pause(0.01)
-                    if one.main_screen.query_one("#project-list", ProjectTable).row_count == 1:
+                    if (
+                        one.main_screen.query_one(
+                            "#project-list", ProjectTable
+                        ).row_count
+                        == 1
+                    ):
                         break
                 else:
                     raise AssertionError("Other TUI did not refresh its project list")

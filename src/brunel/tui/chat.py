@@ -19,7 +19,9 @@ class TextInput(TextArea):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(placeholder="Write a message… (runtime not connected)", **kwargs)
+        super().__init__(
+            placeholder="Write a message… (runtime not connected)", **kwargs
+        )
 
 
 class Composer(Vertical):
@@ -48,7 +50,9 @@ class ChatMessage(Vertical):
         yield Static("", markup=False, classes="message-label")
         entry = self.initial_entry
         if entry.role in {"call", "tool", "reasoning", "activity"}:
-            with Collapsible(title=entry.name or entry.activity_type or entry.role.title()):
+            with Collapsible(
+                title=entry.name or entry.activity_type or entry.role.title()
+            ):
                 yield Static("", markup=False, classes="message-content")
         else:
             yield Markdown("", open_links=False, classes="message-content")
@@ -89,7 +93,9 @@ class Transcript(VerticalScroll):
         self.messages: dict[str, ChatMessage] = {}
 
     def compose(self) -> ComposeResult:
-        yield Static("No messages yet. The agent runtime is not connected.", id="chat-empty")
+        yield Static(
+            "No messages yet. The agent runtime is not connected.", id="chat-empty"
+        )
 
     async def reconcile(self, store: ConversationStore, change: StoreChange) -> None:
         follow = self.is_vertical_scroll_end
@@ -174,6 +180,10 @@ class ChatScreen(Screen):
             self.update_status()
 
     def update_status(self) -> None:
-        steps = ", ".join(name for _, name in sorted(self.store.steps, key=lambda step: step[1]))
+        steps = ", ".join(
+            name for _, name in sorted(self.store.steps, key=lambda step: step[1])
+        )
         parts = [self.store.status, steps, self.store.notice]
-        self.query_one("#chat-status", Static).update(" · ".join(part for part in parts if part))
+        self.query_one("#chat-status", Static).update(
+            " · ".join(part for part in parts if part)
+        )

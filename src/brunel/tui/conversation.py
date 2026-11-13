@@ -8,7 +8,6 @@ from pydantic import TypeAdapter
 
 from brunel.tui.stores import StoreChange
 
-
 EVENT = TypeAdapter(ag.Event)
 
 
@@ -61,15 +60,25 @@ class ConversationStore:
             return StoreChange(status=True)
         if kind in {"RUN_FINISHED", "RUN_ERROR"}:
             if kind == "RUN_FINISHED":
-                if not self._active or event.thread_id != self.thread_id or event.run_id != self.run_id:
+                if (
+                    not self._active
+                    or event.thread_id != self.thread_id
+                    or event.run_id != self.run_id
+                ):
                     raise ValueError("Run identifiers do not match")
                 self._close_chunks()
-                if self._open or self._spans or self.steps or "running" in self.subagents.values():
+                if (
+                    self._open
+                    or self._spans
+                    or self.steps
+                    or "running" in self.subagents.values()
+                ):
                     raise ValueError("Run finished with open messages or tool calls")
                 outcome = data.get("outcome", {})
-                self.status = {"interrupt": "Awaiting input", "cancelled": "Cancelled"}.get(
-                    outcome.get("type"), "Complete"
-                )
+                self.status = {
+                    "interrupt": "Awaiting input",
+                    "cancelled": "Cancelled",
+                }.get(outcome.get("type"), "Complete")
                 self.interrupts = tuple(outcome.get("interrupts", ()))
             else:
                 self.status = "Failed"
@@ -80,7 +89,10 @@ class ConversationStore:
                 self._chunks.clear()
                 self._spans.clear()
                 self.steps.clear()
-                self.subagents = {key: "interrupted" if value == "running" else value for key, value in self.subagents.items()}
+                self.subagents = {
+                    key: "interrupted" if value == "running" else value
+                    for key, value in self.subagents.items()
+                }
             self._active = False
             return StoreChange(updated=tuple(self.entries), status=True)
         if kind == "MESSAGES_SNAPSHOT":
@@ -88,24 +100,32 @@ class ConversationStore:
             for message in event.messages:
                 item = message.model_dump(exclude_none=True)
                 incoming[message.id] = TranscriptEntry(
-                    id=message.id, role=message.role,
+                    id=message.id,
+                    role=message.role,
                     content=self._text(item.get("content", "")),
-                    name=item.get("name", ""), tool_call_id=item.get("tool_call_id"),
-                    activity_type=item.get("activity_type"), data=deepcopy(item.get("content")),
-                    owner=item.get("subagent_run_id"), metadata=deepcopy(item.get("metadata", {})),
+                    name=item.get("name", ""),
+                    tool_call_id=item.get("tool_call_id"),
+                    activity_type=item.get("activity_type"),
+                    data=deepcopy(item.get("content")),
+                    owner=item.get("subagent_run_id"),
+                    metadata=deepcopy(item.get("metadata", {})),
                 )
                 for call in item.get("tool_calls", []):
                     key = self._tool_key(call["id"])
                     incoming[key] = TranscriptEntry(
-                        id=key, role="call", name=call["function"]["name"],
-                        content=call["function"]["arguments"], tool_call_id=call["id"],
+                        id=key,
+                        role="call",
+                        name=call["function"]["name"],
+                        content=call["function"]["arguments"],
+                        tool_call_id=call["id"],
                         status="arguments complete",
                     )
             roles = {entry.role for entry in incoming.values()}
             self.entries = {
                 key: incoming.pop(key, entry)
                 for key, entry in self.entries.items()
-                if key in incoming or (entry.role in {"activity", "reasoning"} and entry.role not in roles)
+                if key in incoming
+                or (entry.role in {"activity", "reasoning"} and entry.role not in roles)
             } | incoming
             self._open.intersection_update(self.entries)
             return StoreChange(updated=tuple(self.entries), structure=True)
@@ -114,9 +134,18 @@ class ConversationStore:
                 self.state = deepcopy(event.snapshot)
             else:
                 try:
-                    self.state = jsonpatch.apply_patch(self.state, event.delta, in_place=False)
-                except (jsonpatch.JsonPatchException, KeyError, IndexError, TypeError) as error:
-                    self.notice = f"State update skipped; waiting for a fresh snapshot: {error}"
+                    self.state = jsonpatch.apply_patch(
+                        self.state, event.delta, in_place=False
+                    )
+                except (
+                    jsonpatch.JsonPatchException,
+                    KeyError,
+                    IndexError,
+                    TypeError,
+                ) as error:
+                    self.notice = (
+                        f"State update skipped; waiting for a fresh snapshot: {error}"
+                    )
             return StoreChange(status=True)
         if kind.startswith("STEP_"):
             key = (owner, event.step_name)
@@ -127,7 +156,8 @@ class ConversationStore:
             return StoreChange(status=True)
         if kind.startswith("SUBAGENT_"):
             self.subagents[event.subagent_run_id] = {
-                "SUBAGENT_STARTED": "running", "SUBAGENT_FINISHED": "complete",
+                "SUBAGENT_STARTED": "running",
+                "SUBAGENT_FINISHED": "complete",
                 "SUBAGENT_ERROR": "failed",
             }[kind]
             return StoreChange(status=True)
@@ -151,12 +181,17 @@ class ConversationStore:
             if key in self.entries and self.entries[key].role != "tool":
                 raise ValueError("Message ID already belongs to another role")
             self.entries[key] = TranscriptEntry(
-                id=key, role="tool", content=self._text(event.content),
-                tool_call_id=event.tool_call_id, owner=owner,
+                id=key,
+                role="tool",
+                content=self._text(event.content),
+                tool_call_id=event.tool_call_id,
+                owner=owner,
             )
             call = self._tool_key(event.tool_call_id)
             if call in self.entries:
-                self.entries[call] = replace(self.entries[call], status="result received")
+                self.entries[call] = replace(
+                    self.entries[call], status="result received"
+                )
             return StoreChange(updated=(key, call), structure=True)
         if kind.startswith("ACTIVITY_"):
             key = event.message_id
@@ -173,20 +208,34 @@ class ConversationStore:
                     return StoreChange(status=True)
                 self._check_owner(existing, owner)
                 try:
-                    content = jsonpatch.apply_patch(existing.data, event.patch, in_place=False)
-                except (jsonpatch.JsonPatchException, KeyError, IndexError, TypeError) as error:
+                    content = jsonpatch.apply_patch(
+                        existing.data, event.patch, in_place=False
+                    )
+                except (
+                    jsonpatch.JsonPatchException,
+                    KeyError,
+                    IndexError,
+                    TypeError,
+                ) as error:
                     self.notice = f"Activity update skipped: {error}"
                     return StoreChange(status=True)
             self.entries[key] = TranscriptEntry(
-                id=key, role="activity", activity_type=event.activity_type,
-                data=content, content=json.dumps(content, indent=2, ensure_ascii=False),
+                id=key,
+                role="activity",
+                activity_type=event.activity_type,
+                data=content,
+                content=json.dumps(content, indent=2, ensure_ascii=False),
                 owner=owner if kind == "ACTIVITY_SNAPSHOT" else existing.owner,
             )
             return StoreChange(updated=(key,), structure=existing is None)
         family = (
-            "tool" if kind.startswith("TOOL_CALL_") else
-            "reasoning" if kind.startswith(("REASONING_MESSAGE_", "THINKING_TEXT_MESSAGE_")) else
-            "text" if kind.startswith("TEXT_MESSAGE_") else None
+            "tool"
+            if kind.startswith("TOOL_CALL_")
+            else "reasoning"
+            if kind.startswith(("REASONING_MESSAGE_", "THINKING_TEXT_MESSAGE_"))
+            else "text"
+            if kind.startswith("TEXT_MESSAGE_")
+            else None
         )
         if family is None:
             self.notice = f"{kind}: no renderer registered"
@@ -209,15 +258,24 @@ class ConversationStore:
         if starting:
             if key in self._open:
                 raise ValueError("Entity is already open")
-            role = "call" if family == "tool" else "reasoning" if family == "reasoning" else data.get("role", "assistant")
+            role = (
+                "call"
+                if family == "tool"
+                else "reasoning"
+                if family == "reasoning"
+                else data.get("role", "assistant")
+            )
             if existing is not None:
                 if existing.role != role:
                     raise ValueError("Message ID already belongs to another role")
                 self._check_owner(existing, owner)
             else:
                 self.entries[key] = TranscriptEntry(
-                    id=key, role=role, name=data.get("tool_call_name", data.get("name", "")),
-                    tool_call_id=identifier if family == "tool" else None, owner=owner,
+                    id=key,
+                    role=role,
+                    name=data.get("tool_call_name", data.get("name", "")),
+                    tool_call_id=identifier if family == "tool" else None,
+                    owner=owner,
                 )
             self._open.add(key)
         elif key not in self._open:
@@ -228,8 +286,11 @@ class ConversationStore:
             raise ValueError("Tool name does not match its opener")
         ending = kind.endswith("_END")
         self.entries[key] = replace(
-            entry, content=entry.content + data.get("delta", ""),
-            status=("arguments complete" if family == "tool" else "complete") if ending else "streaming",
+            entry,
+            content=entry.content + data.get("delta", ""),
+            status=("arguments complete" if family == "tool" else "complete")
+            if ending
+            else "streaming",
             metadata=entry.metadata | deepcopy(data.get("metadata", {})),
         )
         if ending:
@@ -241,7 +302,8 @@ class ConversationStore:
         key = self._tool_key(identifier) if family == "tool" else identifier
         self._open.discard(key)
         self.entries[key] = replace(
-            self.entries[key], status="arguments complete" if family == "tool" else "complete"
+            self.entries[key],
+            status="arguments complete" if family == "tool" else "complete",
         )
         return key
 
@@ -271,6 +333,10 @@ class ConversationStore:
                 lines.append(item["text"])
             else:
                 source = item.get("source", {})
-                target = source.get("value", "") if source.get("type") == "url" else "not available as a link"
+                target = (
+                    source.get("value", "")
+                    if source.get("type") == "url"
+                    else "not available as a link"
+                )
                 lines.append(f"[{item.get('type', 'attachment')}: {target}]")
         return "\n".join(lines)

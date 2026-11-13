@@ -116,11 +116,17 @@ def test_real_socket_shared_daemon_and_idle_exit(tmp_path):
         await asyncio.to_thread(process.wait, 3)
         assert process.returncode == 0
         assert not (directory / "daemon.sock").exists()
-        engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'data' / 'brunel.sqlite3'}")
+        engine = create_engine(
+            f"sqlite+pysqlite:///{tmp_path / 'data' / 'brunel.sqlite3'}"
+        )
         try:
             assert inspect(engine).get_table_names() == [
-                "alembic_version", "projects", "thread_events", "thread_inbox",
-                "thread_messages", "threads",
+                "alembic_version",
+                "projects",
+                "thread_events",
+                "thread_inbox",
+                "thread_messages",
+                "threads",
             ]
         finally:
             engine.dispose()
@@ -130,7 +136,9 @@ def test_real_socket_shared_daemon_and_idle_exit(tmp_path):
         with (directory / "test.log").open("wb") as log:
             process = subprocess.Popen(
                 [sys.executable, "-m", "brunel.cli", "server", "--idle-timeout", "0.3"],
-                env={**os.environ, "BRUNEL_RUNTIME_DIR": name}, stdout=log, stderr=log,
+                env={**os.environ, "BRUNEL_RUNTIME_DIR": name},
+                stdout=log,
+                stderr=log,
             )
             try:
                 asyncio.run(check(directory, process))
@@ -145,7 +153,9 @@ def test_simultaneous_discovery_starts_one_daemon():
         clients = [DaemonClient(directory), DaemonClient(directory)]
         pid = None
         try:
-            statuses = await asyncio.gather(*(client.ensure_running() for client in clients))
+            statuses = await asyncio.gather(
+                *(client.ensure_running() for client in clients)
+            )
             assert statuses[0].run_id == statuses[1].run_id
             pid = statuses[0].pid
         finally:
@@ -162,12 +172,15 @@ def test_simultaneous_discovery_starts_one_daemon():
 
 
 def test_two_tuis_share_live_status():
-    from brunel.tui.app import BrunelApp
     from textual.widgets import Static
+
+    from brunel.tui.app import BrunelApp
 
     async def check(directory):
         clients = [DaemonClient(directory), DaemonClient(directory)]
-        statuses = await asyncio.gather(*(client.ensure_running() for client in clients))
+        statuses = await asyncio.gather(
+            *(client.ensure_running() for client in clients)
+        )
         first = BrunelApp(client=clients[0])
         second = BrunelApp(client=clients[1])
         try:
@@ -176,8 +189,12 @@ def test_two_tuis_share_live_status():
                     for _ in range(100):
                         await one.pause(0.02)
                         await two.pause(0.02)
-                        a = str(first.screen.query_one("#daemon-status", Static).content)
-                        b = str(second.screen.query_one("#daemon-status", Static).content)
+                        a = str(
+                            first.screen.query_one("#daemon-status", Static).content
+                        )
+                        b = str(
+                            second.screen.query_one("#daemon-status", Static).content
+                        )
                         if "2 connected clients" in a and a == b:
                             break
                     else:
@@ -186,10 +203,14 @@ def test_two_tuis_share_live_status():
                     await two.press("q")
                 for _ in range(100):
                     await one.pause(0.02)
-                    if "1 connected clients" in str(first.screen.query_one("#daemon-status", Static).content):
+                    if "1 connected clients" in str(
+                        first.screen.query_one("#daemon-status", Static).content
+                    ):
                         break
                 else:
-                    raise AssertionError("Remaining TUI did not receive disconnect update")
+                    raise AssertionError(
+                        "Remaining TUI did not receive disconnect update"
+                    )
                 await one.press("q")
         finally:
             os.kill(statuses[0].pid, 15)

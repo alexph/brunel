@@ -24,9 +24,12 @@ def view(project: Project) -> ProjectView:
 
 def list_projects(database: Database) -> list[ProjectView]:
     with database.sessions() as session:
-        return [view(project) for project in session.scalars(
-            select(Project).order_by(Project.name, Project.local_dir)
-        )]
+        return [
+            view(project)
+            for project in session.scalars(
+                select(Project).order_by(Project.name, Project.local_dir)
+            )
+        ]
 
 
 def find_project(database: Database, location: str) -> ProjectView | None:
@@ -37,9 +40,14 @@ def find_project(database: Database, location: str) -> ProjectView | None:
 
 def add_project(database: Database, location: str) -> tuple[ProjectView, bool]:
     with database.sessions.begin() as session:
-        result = session.execute(insert(Project).values(
-            name=Path(location).name or location, local_dir=location,
-        ).on_conflict_do_nothing(index_elements=[Project.local_dir]))
+        result = session.execute(
+            insert(Project)
+            .values(
+                name=Path(location).name or location,
+                local_dir=location,
+            )
+            .on_conflict_do_nothing(index_elements=[Project.local_dir])
+        )
         project = session.scalar(select(Project).where(Project.local_dir == location))
         assert project is not None
         return view(project), result.rowcount == 1

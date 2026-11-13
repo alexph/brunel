@@ -25,7 +25,9 @@ class ProjectTable(DataTable):
         self.clear()
         self.projects = {str(project.id): project for project in projects}
         for index, project in enumerate(projects):
-            self.add_row(Text(project.name), Text(project.location), key=str(project.id))
+            self.add_row(
+                Text(project.name), Text(project.location), key=str(project.id)
+            )
             if str(project.id) == selected:
                 self.move_cursor(row=index)
 

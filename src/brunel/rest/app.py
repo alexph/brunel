@@ -14,8 +14,11 @@ from brunel.rest.endpoints import router
 
 
 def create_app(
-    state: DaemonState, shutdown: Callable[[], None], *,
-    runtime: RuntimeConfig | None = None, database: Database | None = None,
+    state: DaemonState,
+    shutdown: Callable[[], None],
+    *,
+    runtime: RuntimeConfig | None = None,
+    database: Database | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -71,14 +74,17 @@ def create_app(
                     await websocket.send_text(event.model_dump_json())
 
             tasks = {
-                asyncio.create_task(receive()), asyncio.create_task(send()),
+                asyncio.create_task(receive()),
+                asyncio.create_task(send()),
                 asyncio.create_task(subscriber.overflow.wait()),
             }
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in done:
                 task.result()
             if subscriber.overflow.is_set():
-                await websocket.close(code=1013, reason="Client fell behind; reconnect for a snapshot")
+                await websocket.close(
+                    code=1013, reason="Client fell behind; reconnect for a snapshot"
+                )
         except WebSocketDisconnect:
             pass
         finally:

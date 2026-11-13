@@ -14,7 +14,13 @@ class Subscriber:
 
 
 class DaemonState:
-    def __init__(self, *, service: bool = False, idle_timeout: float = 30, queue_capacity: int = 64):
+    def __init__(
+        self,
+        *,
+        service: bool = False,
+        idle_timeout: float = 30,
+        queue_capacity: int = 64,
+    ):
         self.service = service
         self.idle_timeout = idle_timeout
         self.queue_capacity = queue_capacity
@@ -28,15 +34,19 @@ class DaemonState:
 
     def status(self) -> DaemonStatus:
         return DaemonStatus(
-            run_id=self.run_id, pid=os.getpid(),
+            run_id=self.run_id,
+            pid=os.getpid(),
             mode="service" if self.service else "on-demand",
-            clients=len(self.subscribers), live_work=self.live_work,
+            clients=len(self.subscribers),
+            live_work=self.live_work,
             idle_timeout=self.idle_timeout,
         )
 
     def publish(self) -> None:
         self.sequence += 1
-        event = StatusEvent(type="daemon.status", sequence=self.sequence, payload=self.status())
+        event = StatusEvent(
+            type="daemon.status", sequence=self.sequence, payload=self.status()
+        )
         self.broadcast(event)
         self.changed.set()
 
@@ -59,9 +69,13 @@ class DaemonState:
         self.subscribers.add(subscriber)
         self.publish()
         subscriber.queue.get_nowait()
-        subscriber.queue.put_nowait(StatusEvent(
-            type="snapshot", sequence=self.sequence, payload=self.status(),
-        ))
+        subscriber.queue.put_nowait(
+            StatusEvent(
+                type="snapshot",
+                sequence=self.sequence,
+                payload=self.status(),
+            )
+        )
         return subscriber
 
     def unsubscribe(self, subscriber: Subscriber) -> None:

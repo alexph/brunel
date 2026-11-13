@@ -33,3 +33,16 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/brunel"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+include = ["*.py", "*.pyi", "**/pyproject.toml"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.5",
+]

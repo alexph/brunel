@@ -2,7 +2,16 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid7
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint, Uuid, func
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -28,11 +37,15 @@ class Project(Base):
 
 class Thread(Base):
     __tablename__ = "threads"
-    __table_args__ = (CheckConstraint("parent_thread_id != id", name="ck_threads_not_own_parent"),)
+    __table_args__ = (
+        CheckConstraint("parent_thread_id != id", name="ck_threads_not_own_parent"),
+    )
 
     project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id"), index=True)
     title: Mapped[str | None] = mapped_column(String)
-    parent_thread_id: Mapped[UUID | None] = mapped_column(ForeignKey("threads.id"), index=True)
+    parent_thread_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("threads.id"), index=True
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

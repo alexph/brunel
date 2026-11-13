@@ -1,5 +1,5 @@
-from dataclasses import FrozenInstanceError
 import tempfile
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -14,7 +14,14 @@ from brunel.app.settings import load_settings
 
 @pytest.fixture(autouse=True)
 def clean_environment(monkeypatch):
-    for name in ("CONFIG_FILE", "DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "DATABASE_PATH", "IDLE_TIMEOUT"):
+    for name in (
+        "CONFIG_FILE",
+        "DATA_DIR",
+        "CONFIG_DIR",
+        "CACHE_DIR",
+        "DATABASE_PATH",
+        "IDLE_TIMEOUT",
+    ):
         monkeypatch.delenv(f"BRUNEL_{name}", raising=False)
 
 
@@ -32,7 +39,9 @@ def test_settings_precedence_and_validation(tmp_path, monkeypatch):
 
 def test_resolution_is_immutable_and_has_no_directory_side_effects(tmp_path):
     config = tmp_path / "brunel.toml"
-    config.write_text('data_dir = "state"\nconfig_dir = "discovery"\ncache_dir = "cache"\n')
+    config.write_text(
+        'data_dir = "state"\nconfig_dir = "discovery"\ncache_dir = "cache"\n'
+    )
     runtime = load_runtime_config(config)
     assert runtime.locations.data == tmp_path / "state"
     assert runtime.locations.config == tmp_path / "discovery"
@@ -46,14 +55,21 @@ def test_resolution_is_immutable_and_has_no_directory_side_effects(tmp_path):
 
 
 def test_default_file_is_optional_but_explicit_file_is_required(tmp_path, monkeypatch):
-    from brunel.app.locations import get_locations
     from types import SimpleNamespace
 
+    from brunel.app.locations import get_locations
+
     defaults = get_locations()
-    monkeypatch.setattr("brunel.app.runtime.get_locations", lambda: SimpleNamespace(
-        home=defaults.home, install=defaults.install,
-        config=tmp_path / "config", data=tmp_path / "data", cache=tmp_path / "cache",
-    ))
+    monkeypatch.setattr(
+        "brunel.app.runtime.get_locations",
+        lambda: SimpleNamespace(
+            home=defaults.home,
+            install=defaults.install,
+            config=tmp_path / "config",
+            data=tmp_path / "data",
+            cache=tmp_path / "cache",
+        ),
+    )
     assert load_runtime_config().idle_timeout == 30
     assert not (tmp_path / "config").exists()
     with pytest.raises(FileNotFoundError):
@@ -67,7 +83,7 @@ def test_config_file_selection_and_database_override(tmp_path, monkeypatch):
     first = tmp_path / "first.toml"
     first.write_text('database_path = "db/custom.sqlite3"\nidle_timeout = 6\n')
     second = tmp_path / "second.toml"
-    second.write_text('idle_timeout = 8\n')
+    second.write_text("idle_timeout = 8\n")
     monkeypatch.setenv("BRUNEL_CONFIG_FILE", str(first))
     runtime = load_runtime_config()
     assert runtime.database_url.endswith("/db/custom.sqlite3")
@@ -101,8 +117,12 @@ def test_bootstrap_and_sessions_with_percent_in_path(tmp_path):
     try:
         with database.sessions() as session:
             assert inspect(session.connection()).get_table_names() == [
-                "alembic_version", "projects", "thread_events", "thread_inbox",
-                "thread_messages", "threads",
+                "alembic_version",
+                "projects",
+                "thread_events",
+                "thread_inbox",
+                "thread_messages",
+                "threads",
             ]
     finally:
         database.close()
@@ -131,7 +151,9 @@ def short_runtime_directory():
         yield Path(directory)
 
 
-def test_database_disposed_when_server_fails(tmp_path, monkeypatch, short_runtime_directory):
+def test_database_disposed_when_server_fails(
+    tmp_path, monkeypatch, short_runtime_directory
+):
     import importlib
 
     module = importlib.import_module("brunel.rest.server")
